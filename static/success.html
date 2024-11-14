@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Success screen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+      <script type="module" src="/static/index.js"></script>
+      <link rel="stylesheet" href="/static/styles.css" />
+      <script>
+          function redirectUrl() {
+              window.location.href="sampleTinkapp://callback"
+          }
+      </script>
+          <script>
+              function sendDataToSwift(data) {
+                  window.webkit.messageHandlers.dataHandler.postMessage(data);
+              }
+          </script>
+</head>
+
+<body>
+  <div class="container">
+    
+    <div class="success">
+      <h1>Success</h1>
+      <p>You account has successfully added.</p>
+      <p>Press the submit button to add your account number ending in 9355 to make transactions!</p>
+      <div class="redirect-btn-container"><button onclick=redirectUrl() class="btn redirect-btn">submit</button></div>
+    </div>
+  </div>
+
+  <template id="tpl-transaction">
+    <li class="transaction">
+      <div class="row space-between">
+        <div class="transaction__description"></div>
+        <div>
+          <span class="transaction__amount"></span>
+          <span class="transaction__currency"></span>
+        </div>
+      </div>
+      <div class="row space-between">
+        <span class="transaction__date"></span>
+        <span class="transaction__category badge"></span>
+      </div>
+      <details>
+        <summary>details</summary>
+        <pre class="transaction__json"></pre>
+      </details>
+    </li>
+  </template>
+
+  <template id="tpl-account">
+    <li class="account card">
+      <div class="account__balance"></div>
+      <div class="account__type badge"></div>
+      <div class="account__footer">
+        <div class="account__name text-truncate"></div>
+        <div class="account__number text-truncate"></div>
+      </div>
+    </li>
+  </template>
+
+</body>
+
+</html>
