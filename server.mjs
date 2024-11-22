@@ -1,6 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import path, { parse } from 'node:path';
+import path from 'node:path';
 import url, { URL, URLSearchParams } from 'node:url';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
@@ -23,32 +23,36 @@ const port = 3000;
 const apiUrl = 'https://api.tink.com';
 
 function respondWithError(res, err) {
-  res.writeHead(500, { 'Content-Type': 'application/json' }).end(JSON.stringify({
-    error: err.message,
-  }));
+  if (res.writableEnded) return; // Prevent writing headers if the response is already sent
+  res.writeHead(500, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: err.message }));
 }
 
 function respondWithJson(res, data) {
-  res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(data)); 
+  if (res.writableEnded) return; // Prevent writing headers if the response is already sent
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
 }
 
 async function parseResponse(res) {
   if (!res.ok) {
     throw new Error(`Request failed with "${res.status}"`);
   }
-
   const data = await res.json();
   return data;
 }
 
 function serveStaticContent(req, res) {
-  const p = path.join(__dirname,'.',req.url);
+  const filePath = path.join(__dirname, '.', req.url);
   const contentType = req.url.endsWith('.js') ? 'text/javascript' : 'text/css';
+
   res.setHeader('Content-Type', contentType);
 
-  var stream = fs.createReadStream(p);
+  const stream = fs.createReadStream(filePath);
   stream.on('error', () => {
-    res.writeHead(404, { 'Content-Type': 'text/plain' }).end();
+    if (res.writableEnded) return; // Prevent error handling after response is sent
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
   });
 
   stream.pipe(res);
@@ -56,10 +60,10 @@ function serveStaticContent(req, res) {
 
 async function fetchAccessToken(code) {
   const body = new URLSearchParams({
-    code: code,
-    client_id: CLIENT_ID, // Your OAuth client identifier.
-    client_secret: CLIENT_SECRET, // Your OAuth client secret. Always handle the secret with care.
-    grant_type: 'authorization_code'
+    code,
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    grant_type: 'authorization_code',
   });
 
   const res = await fetch(`${apiUrl}/api/v1/oauth/token`, {
@@ -75,7 +79,7 @@ async function authenticatedApiProxyHandler(req, res, parsedUrl) {
   const response = await fetch(`${apiUrl}${apiPath}`, {
     method: req.method,
     headers: {
-      Authorization: req.headers.authorization
+      Authorization: req.headers.authorization,
     },
   });
 
@@ -85,42 +89,33 @@ async function authenticatedApiProxyHandler(req, res, parsedUrl) {
 const server = http.createServer(async (req, res) => {
   console.info(`${req.method}: `, req.url);
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
-    
-    // Assuming the journey ends after authorization
-      // if (parsedUrl.pathname === "/end-of-journey") {
-      //   res.writeHead(302, { Location: "/success.html" });
-      //   res.end();
-      //   return;
-      // }
 
-  if (parsedUrl.pathname.endsWith('/api/v1/oauth/token') && req.method === 'POST') {
-    const codeParam = parsedUrl.searchParams.get('code');
-    try {
+  try {
+    if (parsedUrl.pathname === '/api/v1/oauth/token' && req.method === 'POST') {
+      const codeParam = parsedUrl.searchParams.get('code');
       if (!codeParam) {
         throw new Error('Missing required parameter "code"');
       }
       const response = await fetchAccessToken(codeParam);
-      respondWithJson(res, response);
-    } catch (err) {
-      respondWithError(res, err);
+      return respondWithJson(res, response);
     }
-  }
 
-  if (parsedUrl.pathname.startsWith('/api-proxy')) {
-    try {
+    if (parsedUrl.pathname.startsWith('/api-proxy')) {
       const response = await authenticatedApiProxyHandler(req, res, parsedUrl);
-      respondWithJson(res, response);
-    } catch (err) {
-      respondWithError(res, err);
+      return respondWithJson(res, response);
     }
-  }
 
-  if (req.url.indexOf('/static') === 0) {
-    return serveStaticContent(req, res);
+    if (req.url.startsWith('/static')) {
+      return serveStaticContent(req, res);
+    }
+
+    // Serve index.html for other requests
+    res.writeHead(200, { 'content-type': 'text/html' });
+    return fs.createReadStream('index.html').pipe(res);
+
+  } catch (err) {
+    respondWithError(res, err);
   }
-    
-  res.writeHead(200, { 'content-type': 'text/html' });
-  fs.createReadStream('index.html').pipe(res);
 });
 
 server.listen(port, hostname, () => {

@@ -9,13 +9,20 @@
       <link rel="stylesheet" href="./static/styles.css" />
       <script>
           function redirectUrl() {
-              window.location.href="sampleTinkapp://callback"
+               window.location.href="sampleTinkapp://callback"
           }
       </script>
           <script>
-              function sendDataToSwift(data) {
-                  window.webkit.messageHandlers.dataHandler.postMessage(data);
-              }
+             function sendDataToSwift() {
+        const accountNumber = "8765"; 
+        const message = {
+            action: "dismiss",
+            accountNumber: accountNumber
+        };
+
+        console.log("Sending message to Swift: ", JSON.stringify(message)); 
+        window.webkit.messageHandlers.iosHandler.postMessage(JSON.stringify(message)); 
+    }
           </script>
 </head>
 
@@ -31,7 +38,7 @@
       <h1>Success</h1>
       <p>You account has been successfully added.</p>
       <p>Press the submit button to add your account number ending with 9355 to make transactions!</p>
-      <div class="redirect-btn-container"><button onclick=redirectUrl() class="btn redirect-btn">submit</button></div>
+      <div class="redirect-btn-container"><button onclick=sendDataToSwift() class="btn redirect-btn">submit</button></div>
     </div>
     </div>
     
@@ -92,12 +99,6 @@
         <input type="hidden" name="redirect_uri" value="http://localhost:3000/callback" />
         <button class="btn">Connect bank</button>
       </form>
-      
-      <!-- <div class="redirect-btn-container"><button onclick=redirectUrl() class="btn redirect-btn">Redirect to app</button></div> -->
-      
-<!--      <div class="redirect-btn-container"><button onclick=sendDataToSwift('Hello from JavaScript')>Send Data</button></div>-->
-      
-      
     </div>
   
     <div class="results hidden">
