@@ -8,10 +8,14 @@
       <script type="module" src="./static/index.js"></script>
       <link rel="stylesheet" href="./static/styles.css" />
       <script>
-          function redirectUrl() {
-               window.location.href="sampleTinkapp://callback"
-          }
-      </script>
+        function redirectUrl() {
+            const accountNumber = "8765"; // Example account number
+            const callbackURL = `sampleTinkapp://callback?accountNumber=${accountNumber}`;
+            
+            console.log("Redirecting to:", callbackURL); // Debug log
+            window.location.href = callbackURL; // Redirect with data
+        }
+    </script>
           <script>
              function sendDataToSwift() {
         const accountNumber = "8765"; 
@@ -38,7 +42,7 @@
       <h1>Success</h1>
       <p>You account has been successfully added.</p>
       <p>Press the submit button to add your account number ending with 9355 to make transactions!</p>
-      <div class="redirect-btn-container"><button onclick=sendDataToSwift() class="btn redirect-btn">submit</button></div>
+      <div class="redirect-btn-container"><button onclick=redirectUrl() class="btn redirect-btn">submit</button></div>
     </div>
     </div>
     
